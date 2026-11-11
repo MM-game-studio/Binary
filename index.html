@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="fa">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Binary Tool + QR Download</title>
+
+<style>
+  body {
+    margin: 0;
+    font-family: sans-serif;
+    background: #0f172a;
+    color: #e2e8f0;
+    direction: rtl;
+  }
+
+  .container {
+    max-width: 900px;
+    margin: auto;
+    padding: 20px;
+  }
+
+  .title {
+    text-align: center;
+    font-size: 22px;
+    margin-bottom: 20px;
+    color: #38bdf8;
+  }
+
+  .card {
+    background: #111827;
+    padding: 15px;
+    border-radius: 12px;
+    margin-bottom: 15px;
+  }
+
+  textarea {
+    width: 100%;
+    height: 140px;
+    border-radius: 10px;
+    border: none;
+    padding: 12px;
+    font-size: 15px;
+    background: #0b1220;
+    color: #e2e8f0;
+    outline: none;
+    resize: none;
+    box-sizing: border-box;
+  }
+
+  .buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 10px;
+  }
+
+  button {
+    flex: 1;
+    padding: 10px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    background: #1f2937;
+    color: white;
+    font-size: 14px;
+    transition: 0.2s;
+  }
+
+  button:hover {
+    background: #334155;
+  }
+
+  .primary { background: #2563eb; }
+  .orange { background: #ea580c; }
+  .green { background: #16a34a; }
+  .purple { background: #7c3aed; }
+
+  .mode-box {
+    margin-top: 10px;
+    text-align: center;
+    color: #cbd5e1;
+    font-size: 14px;
+  }
+
+  .output {
+    white-space: pre-wrap;
+    word-break: break-word;
+    min-height: 80px;
+    background: #0b1220;
+    padding: 12px;
+    border-radius: 10px;
+    border: 1px solid #1f2937;
+  }
+
+  #qrBox {
+    display: flex;
+    justify-content: center;
+    padding: 10px;
+    background: #0b1220;
+    border-radius: 10px;
+  }
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+  <div class="title">⚡ Binary Tool + QR PNG Export</div>
+
+  <div class="card">
+    <textarea id="input" placeholder="متن یا باینری را وارد کن..."></textarea>
+
+    <div class="buttons">
+      <button class="primary" onclick="convert()">تبدیل</button>
+      <button class="purple" onclick="toggleMode()">تغییر حالت</button>
+      <button onclick="copyText()">کپی خروجی</button>
+      <button class="orange" onclick="generateQR()">ساخت QR</button>
+      <button class="green" onclick="downloadQR()">دانلود QR (PNG)</button>
+    </div>
+
+    <div class="mode-box" id="modeText">
+      حالت فعلی: متن به باینری
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="output" id="output"></div>
+  </div>
+
+  <div class="card">
+    <div id="qrBox">
+      <div id="qrcode"></div>
+    </div>
+  </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/gh/davidshimjs/qrcodejs/qrcode.min.js"></script>
+
+<script>
+let mode = "textToBinary";
+
+function textToBinary(text) {
+  return text
+    .split("")
+    .map(c => c.charCodeAt(0).toString(2).padStart(8, "0"))
+    .join(" ");
+}
+
+function binaryToText(bin) {
+  return bin.trim()
+    .split(/\s+/)
+    .map(b => String.fromCharCode(parseInt(b, 2)))
+    .join("");
+}
+
+function toggleMode() {
+  mode = mode === "textToBinary"
+    ? "binaryToText"
+    : "textToBinary";
+
+  document.getElementById("modeText").innerText =
+    mode === "textToBinary"
+      ? "حالت فعلی: متن به باینری"
+      : "حالت فعلی: باینری به متن";
+}
+
+function convert() {
+  const input = document.getElementById("input").value.trim();
+
+  if (!input) {
+    alert("لطفاً مقداری وارد کن!");
+    return;
+  }
+
+  try {
+    const result = mode === "textToBinary"
+      ? textToBinary(input)
+      : binaryToText(input);
+
+    document.getElementById("output").innerText = result;
+
+  } catch (e) {
+    alert("ورودی نامعتبر است!");
+  }
+}
+
+function copyText() {
+  const text = document.getElementById("output").innerText;
+
+  if (!text) {
+    alert("خروجی وجود ندارد!");
+    return;
+  }
+
+  // روش سازگار با اکثر مرورگرها و فایل HTML
+  const textarea = document.createElement("textarea");
+  textarea.value = text;
+
+  textarea.style.position = "fixed";
+  textarea.style.opacity = "0";
+
+  document.body.appendChild(textarea);
+
+  textarea.focus();
+  textarea.select();
+
+  try {
+    document.execCommand("copy");
+    alert("خروجی کپی شد!");
+  } catch (err) {
+    alert("کپی انجام نشد!");
+  }
+
+  document.body.removeChild(textarea);
+}
+
+function generateQR() {
+  const text = document.getElementById("output").innerText;
+
+  if (!text) {
+    alert("اول خروجی بساز!");
+    return;
+  }
+
+  document.getElementById("qrcode").innerHTML = "";
+
+  new QRCode(document.getElementById("qrcode"), {
+    text: text,
+    width: 180,
+    height: 180
+  });
+}
+
+function downloadQR() {
+  const qrCanvas = document.querySelector("#qrcode canvas");
+
+  if (!qrCanvas) {
+    alert("اول QR بساز!");
+    return;
+  }
+
+  const link = document.createElement("a");
+  link.href = qrCanvas.toDataURL("image/png");
+  link.download = "qrcode.png";
+  link.click();
+}
+</script>
+
+</body>
+</html>
